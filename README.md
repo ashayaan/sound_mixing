@@ -1,2 +1,2 @@
-# sound_mixing
-Deep learning for sound mixing
+# ai_audio_engineer
+Training an AI Audio Engineer
