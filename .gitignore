@@ -1,3 +1,5 @@
 .idea/*
 *.pyc
+dataset/*
+dataset_raw/*
 music_env/*

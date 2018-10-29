@@ -1,8 +1,9 @@
-# import os
 import librosa
-import config
+from tools import config
 
-# import numpy as np
+import numpy as np
+
+# alternnate modules for audio processing
 # import soundfile as sf
 # import scipy.io.wavfile as wavfile
 
@@ -14,7 +15,6 @@ def get_audio_data(audio_file_path):
     :return audio_data: numpy array
     """
     audio_data = None
-
     try:
         audio_data, sample_rate = librosa.load(audio_file_path, sr=config.SAMPLE_RATE)
     except Exception:
@@ -32,10 +32,31 @@ def pad_audio_data(audio_data):
     :return padded audio_data:
     """
     audio_data = librosa.util.fix_length(audio_data, config.MAX_LENGTH)
+    print audio_data.shape
     return audio_data
 
 
+def create_empty_track(output_file_path):
+    """
+    :param output_file_path: path to which the empty audio file should be written
+    :return audio_data: numpy array
+    """
+    audio_data = np.zeros([config.MAX_LENGTH, ])
+    librosa.output.write_wav(output_file_path, audio_data, config.SAMPLE_RATE)
+    return audio_data
+
+
+def get_audio_duration(audio_file_path):
+    """
+    :param audio_file_path:
+    :return audio_duration:
+    """
+    audio_data = get_audio_data(audio_file_path)
+    audio_duration = librosa.core.get_duration(audio_data, sr=config.SAMPLE_RATE)
+    return audio_duration
+
+
 if __name__ == "__main__":
-    audio_file_path = "sample_wav_file.wav"
+    audio_file_path = "dataset/sample_audio_files/sample_wav_file.wav"
     audio_data = get_audio_data(audio_file_path)
     pad_audio_data(audio_data)
