@@ -1,5 +1,5 @@
 import librosa
-from tools import config
+import config
 
 import numpy as np
 
@@ -57,6 +57,7 @@ def get_audio_duration(audio_file_path):
 
 
 if __name__ == "__main__":
-    audio_file_path = "dataset/sample_audio_files/sample_wav_file.wav"
+    audio_file_path = "../dataset_raw/song_1/1111_Remix.mp3"
     audio_data = get_audio_data(audio_file_path)
+    print audio_data, audio_data.shape
     pad_audio_data(audio_data)
