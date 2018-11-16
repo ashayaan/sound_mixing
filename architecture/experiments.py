@@ -15,16 +15,28 @@ for i in range(c):
 print(c_bilstms)
 
 lstm = nn.LSTM(embedding_dim, hidden_dim // 2, num_layers=1, bidirectional=True)  # Input dim is 3, output dim is 3
+uni_lstm = nn.LSTM(embedding_dim, hidden_dim)  # Input dim is 3, output dim is 3
+
 inputs = [torch.randn(1, embedding_dim) for _ in range(5)]  # make a sequence of length 5
 
 # initialize the hidden state.
 hidden = (torch.randn(2, 1, hidden_dim // 2),
           torch.randn(2, 1, hidden_dim // 2))
 
+# initialize the hidden state.
+uni_hidden = (torch.randn(1, 1, hidden_dim),
+          torch.randn(1, 1, hidden_dim))
+
 for i in inputs:
     # Step through the sequence one element at a time.
     # after each step, hidden contains the hidden state.
     out, hidden = lstm(i.view(1, 1, -1), hidden)
+
+
+for i in inputs:
+    # Step through the sequence one element at a time.
+    # after each step, hidden contains the hidden state.
+    uni_out, uni_hidden = uni_lstm(i.view(1, 1, -1), uni_hidden)
 
 # alternatively, we can do the entire sequence all at once.
 # the first value returned by LSTM is all of the hidden states throughout
@@ -37,7 +49,17 @@ for i in inputs:
 # Add the extra 2nd dimension
 inputs = torch.cat(inputs).view(len(inputs), 1, -1)
 hidden = (torch.randn(2, 1, hidden_dim // 2), torch.randn(2, 1, hidden_dim // 2))  # clean out hidden state
+uni_hidden = (torch.randn(1, 1, hidden_dim), torch.randn(1, 1, hidden_dim))  # clean out hidden state
 out, hidden = lstm(inputs, hidden)
+uni_out, uni_hidden = uni_lstm(inputs, uni_hidden)
 
 print(out.shape)
+print(out.view(len(inputs), -1).shape)
 print(hidden[0].shape)
+print('---------------------------------------------')
+print(uni_out.shape)
+print(uni_out.view(len(inputs), -1).shape)
+print(uni_hidden[0].shape)
+
+print(uni_out[-1].view(-1,1).shape)
+print(uni_hidden[0].shape)

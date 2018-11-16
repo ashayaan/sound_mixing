@@ -3,7 +3,7 @@ import torch.nn as  nn
 import numpy
 
 
-def attention_channel(H, B_1, b_t, h, dimensions):
+def attention_across_track(H, h, B_1, b_t, dimensions):
     '''The multiplication of the parameter matrices H and the
        hidden representation of the ith channel'''
 
@@ -27,7 +27,7 @@ def attention_channel(H, B_1, b_t, h, dimensions):
     return alpha
 
 
-def attention_tracks(B_2, b_t, alpha, F, dimensions):
+def attention_across_channels(B_2, b_t, F, alpha, dimensions):
     X = torch.matmul(F, alpha)
 
     Y = torch.matmul(B_2, b_t)
@@ -42,6 +42,25 @@ def attention_tracks(B_2, b_t, alpha, F, dimensions):
     return beta
 
 
+def sample_dirchlet():
+    # TODO: Shayaan
+    pass
+
+
+def sample_scaling_factors_from_distribution():
+    # TODO: Shayaan
+    pass
+
+
+def apply_scaling_factors():
+    # TODO: Shayaan
+    pass
+
+
+def get_mixed_mfcc_at_t():
+    # TODO: Shayaan
+    pass
+
 
 if __name__ == '__main__':
     '''Setting the parameters value'''
@@ -55,8 +74,8 @@ if __name__ == '__main__':
     B_2 = torch.randn(dimensions['r'], dimensions['l'])
 
     #The attention over the channels
-    alpha = attention_channel(H, B_1, b_t, h, dimensions)
+    alpha = attention_across_track(H, B_1, b_t, h, dimensions)
 
     #The attentions over the tracks
-    beta = attention_tracks(B_2, b_t, alpha, F, dimensions)
+    beta = attention_across_channels(B_2, b_t, alpha, F, dimensions)
     print beta
