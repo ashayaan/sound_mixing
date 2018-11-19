@@ -31,8 +31,7 @@ class MFCCUniLSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_dim))
 
     def forward(self, mixed_mfcc_at_t):
-        #TODO: Check features, update dimensions of lstm pass (view)
-        lstm_out, self.hidden = self.lstm(mixed_mfcc_at_t.view(len(mixed_mfcc_at_t), 1, -1), self.hidden)
+        lstm_out, self.hidden = self.lstm(mixed_mfcc_at_t.view(1, 1, -1), self.hidden)
         blended_till_t = lstm_out[-1]
         return blended_till_t.view(-1, 1)
 
@@ -45,6 +44,7 @@ class RawTrackBiLSTM(nn.Module):
         :param num_channels:
         """
         super(RawTrackBiLSTM, self).__init__()
+
         self.hidden_dim = hidden_dim
         self.num_channels = num_channels
 
@@ -93,4 +93,15 @@ if __name__ == "__main__":
     num_channels_bidlstm_hidden = bilstms_model(raw_tracks)
     print(num_channels_bidlstm_hidden.shape)
 
+    from model_tools import get_mixed_mfcc_at_t
+    raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size))
+    mixed_mfcc_at_t = get_mixed_mfcc_at_t(raw_tracks, time_step_value=1)
     unilstms_model = MFCCUniLSTM(mfcc_chunk_size, hidden_dim_unilstm)
+    print(unilstms_model(mixed_mfcc_at_t).shape)
+
+    print(unilstms_model.parameters().next().shape)
+    print(bilstms_model.channels_bilstms[0].parameters().next().shape)
+    print(bilstms_model.channels_bilstms[0].parameters().next().shape)
+
+    import torch.optim as optim
+    optim.Adam(list(bilstms_model.channels_bilstms[0].parameters()) + list(unilstms_model.parameters()))
