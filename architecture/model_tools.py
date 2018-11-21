@@ -2,7 +2,7 @@ import torch
 import torch.nn as  nn
 import numpy as np
 
-
+from torch.distributions.dirichlet import Dirichlet
 from python_speech_features import mfcc
 
 from model_params import hidden_dim_bidlstm                 # k value in our notes
@@ -12,8 +12,7 @@ from model_params import chunk_size                         # lambda/T value in 
 
 from model_params import hidden_dim_unilstm                 # l value in our notes
 from model_params import mfcc_chunk_size
-from model_params import parameter_matrix_dim
-
+from model_params import parameter_matrix_dim                           # r value in our notes
 def attention_across_track(H, h, B_1, b_t):
     '''The multiplication of the parameter matrices H and the
        hidden representation of the ith channel'''
@@ -31,27 +30,29 @@ def attention_across_track(H, h, B_1, b_t):
        over the channels'''
 
     Lambda = torch.matmul(Y.view(-1, num_chunks, 1, parameter_matrix_dim), X)
-
     soft_max = nn.Softmax(dim=1)
+
     alpha = soft_max(Lambda.view(num_channels, num_chunks, 1))
-    alpha = alpha.view(num_channels, num_chunks, 1, 1).repeat(1, 1, 1, hidden_dim_bidlstm)
+    h_alpha = h*alpha.view(num_channels, num_chunks, 1, 1).repeat(1, 1, 1, hidden_dim_bidlstm)
+    h_alpha_context_vec = torch.sum(h_alpha, dim=1)
+    return h_alpha_context_vec, alpha
 
-    return h*alpha, alpha
 
-
-def attention_across_channels(B_2, b_t, F, alpha):
-    X = torch.matmul(F, alpha)
+def attention_across_channels(B_2, b_t, F, h_alpha):
+    X = torch.matmul(F, h_alpha.reshape(num_channels, hidden_dim_bidlstm, 1))
     Y = torch.matmul(B_2, b_t)
     Lambda = torch.matmul(Y.view(-1, 1, parameter_matrix_dim), X).view(num_channels)
     soft_max = nn.Softmax(dim=0)
-    beta = soft_max(Lambda)
+    beta_t1 = soft_max(Lambda)
+    return beta_t1
 
-    return beta
 
 def sample_dirchlet(beta_t1):
-    sample = np.random.dirichlet(beta_t1,(chunk_size))
-    sample = sample.T
-    return torch.tensor(sample)
+    dirichlet_distribution = Dirichlet(beta_t1)
+    sample = dirichlet_distribution.rsample(sample_shape=(chunk_size, ))
+    sample = sample.view(num_channels, chunk_size)
+    return torch.tensor(sample, dtype=torch.float)
+
 
 def apply_scaling_factors(scaling_factor,raw_tracks,time_step):
     raw_tracks[:,time_step, :] *= scaling_factor
@@ -59,12 +60,14 @@ def apply_scaling_factors(scaling_factor,raw_tracks,time_step):
 
     return mixed_raw_tracks, raw_tracks
 
+
 def get_mixed_mfcc_at_t(raw_tracks,time_step_value):
     blended_track_at_t = torch.sum(raw_tracks[:,time_step_value,:],dim=0)
     mfcc_features_blended_song = mfcc(blended_track_at_t)
     mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song.reshape(mfcc_features_blended_song.shape[1])], dtype=torch.float)
 
     return mfcc_features_blended_song
+
 
 def get_original_mfcc_at_t(original_track, time_step_value):
     mfcc_features_original_song = mfcc(original_track[time_step_value, :])

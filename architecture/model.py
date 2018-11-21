@@ -46,62 +46,68 @@ class RawTrackBiLSTM(nn.Module):
         super(RawTrackBiLSTM, self).__init__()
 
         self.hidden_dim = hidden_dim
-        self.num_channels = num_channels
 
-        # instantiating the bi-directional lstm
-        # creating a list for the num_channels x bi-directional lstm
-        # initializing hiddenstates for the num_channels x bi-directional lstm
-        self.channels_bilstms = []
-        self.channels_bilstms_hidden = []
-
-        for i in range(num_channels):
-            self.channels_bilstms.append(nn.LSTM(chunk_size, hidden_dim // 2, num_layers=1, bidirectional=True))
-            self.channels_bilstms_hidden.append(self.init_hidden())
+        self.lstm = nn.LSTM(chunk_size, hidden_dim // 2, num_layers=1, bidirectional=True)
+        self.hidden = self.init_hidden()
 
     def init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
         return (torch.zeros(2, 1, self.hidden_dim // 2),
                 torch.zeros(2, 1, self.hidden_dim // 2))
 
-    def forward(self, raw_tracks):
+    def forward(self, current_channel_raw_track):
         """
         :param raw_tracks:
         :return:
         """
-        all_channels_bidlstm_hidden = []
 
-        for i in range(self.num_channels):
-            current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float).view(num_chunks, 1, -1)
-            current_single_channel_hidden = self.channels_bilstms_hidden[i]
+        lstm_out, _ = self.lstm(current_channel_raw_track.view(num_chunks, 1, -1), self.hidden)
+        return lstm_out
 
-            lstm_out, _ = self.channels_bilstms[i](current_single_channel_info, current_single_channel_hidden)
-            all_channels_bidlstm_hidden.append(lstm_out)
 
-        all_channels_bidlstm_hidden = torch.stack(all_channels_bidlstm_hidden)
-        return all_channels_bidlstm_hidden
+def instantiate_all_channels_bilstms(chunk_size, hidden_dim_bidlstm, num_channels):
+    """
+    instantiating the bi-directional lstm
+    creating a list for the num_channels x bi-directional lstm
+    :param chunk_size:
+    :param hidden_dim_bidlstm:
+    :param num_channels:
+    :return:
+    """
+
+    channels_bilstms = []
+    for i in range(num_channels):
+        channels_bilstms.append(RawTrackBiLSTM(chunk_size, hidden_dim_bidlstm, num_channels))
+
+    return channels_bilstms
+
+
+def forward_pass_all_channel_bilstms(raw_tracks, channels_bilstms):
+    """
+    :param raw_tracks:
+    :param channels_bilstms:
+    :return:
+    """
+    all_channels_bidlstm_hidden = []
+    for i in range(num_channels):
+        current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float).view(num_chunks, 1, -1)
+
+        lstm_out = channels_bilstms[i](current_single_channel_info)
+        all_channels_bidlstm_hidden.append(lstm_out)
+
+    all_channels_bidlstm_hidden = torch.stack(all_channels_bidlstm_hidden)
+    return all_channels_bidlstm_hidden
 
 
 if __name__ == "__main__":
     import numpy as np
-    bilstms_model = RawTrackBiLSTM(chunk_size, hidden_dim_bidlstm, num_channels)
-
-    # each song data input - raw_tracks will have info for all channels and split inro num_chunks
-    raw_tracks = np.random.randn(num_channels, num_chunks, chunk_size)
-
-    bilstms_model.zero_grad()
-
-    num_channels_bidlstm_hidden = bilstms_model(raw_tracks)
-    print(num_channels_bidlstm_hidden.shape)
-
     from model_tools import get_mixed_mfcc_at_t
+
     raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size))
+    channels_bilstms = instantiate_all_channels_bilstms()
+    all_channels_bidlstm_hidden = forward_pass_all_channel_bilstms(raw_tracks, channels_bilstms)
+
     mixed_mfcc_at_t = get_mixed_mfcc_at_t(raw_tracks, time_step_value=1)
     unilstms_model = MFCCUniLSTM(mfcc_chunk_size, hidden_dim_unilstm)
     print(unilstms_model(mixed_mfcc_at_t).shape)
 
-    print(unilstms_model.parameters().next().shape)
-    print(bilstms_model.channels_bilstms[0].parameters().next().shape)
-    print(bilstms_model.channels_bilstms[0].parameters().next().shape)
-
-    import torch.optim as optim
-    optim.Adam(list(bilstms_model.channels_bilstms[0].parameters()) + list(unilstms_model.parameters()))
