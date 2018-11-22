@@ -21,8 +21,7 @@ from model_params import chunk_size                                     # lambda
 from model_params import hidden_dim_unilstm                             # l value in our notes
 from model_params import mfcc_chunk_size
 from model_params import parameter_matrix_dim                           # r value in our notes
-
-from model_params import delta                                          #parameter for the loss funciton
+from model_params import delta                                          # parameter for the loss function
 
 torch.manual_seed(1)
 
@@ -98,13 +97,15 @@ class PolicyNetwork(nn.Module):
         beta_t1 = attention_across_channels(self.parameter_matrix_across_channels, blended_at_t, self.parameter_matrix_for_each_channel_2, h_alpha)
 
         scaling_factor_distibution = sample_dirchlet(beta_t1)
-        mixed_raw_tracks, next_step_mixed_raw = apply_scaling_factors(scaling_factor_distibution, raw_tracks, time_step_value+1)
+        if time_step_value + 1 != self.num_chunks:
+            mixed_raw_tracks, next_step_mixed_raw = apply_scaling_factors(scaling_factor_distibution, raw_tracks, time_step_value+1)
+        else:
+            mixed_raw_tracks = raw_tracks
 
         loss = self.calculate_loss(original_mfcc_at_t, mixed_mfcc_at_t, self.beta_t, beta_t1)
 
         # setting beta_t1 of previous step (for next forward pass) as beta_t
         self.beta_t = beta_t1
-
         return mixed_raw_tracks, loss
 
     def calculate_loss(self, original_mfcc_at_t, mixed_mfcc_at_t, beta_t, beta_t1):
@@ -133,15 +134,18 @@ def train_network(network, songs):
 
             original_mfcc_at_t = get_original_mfcc_at_t(original_song, time_step_value)
             raw_tracks, loss = network.forward(raw_tracks, original_mfcc_at_t, time_step_value)
-            loss.backward()
+            print('LOSS: {}'.format(loss[0][0]))
+            loss.backward(retain_graph=True)
             network.optimizer.step()
+        song_counter += 1
 
 
 if __name__ == "__main__":
     network = PolicyNetwork(num_channels, num_chunks, chunk_size, hidden_dim_bidlstm, mfcc_chunk_size, hidden_dim_unilstm, parameter_matrix_dim)
     songs = []
     for i in range(10):
-        raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size), dtype=torch.float)
-        original_song = torch.tensor(np.zeros((num_chunks, chunk_size)), dtype=torch.float)
+        raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
+        original_song = torch.tensor(np.zeros((num_chunks, chunk_size)), dtype=torch.float, requires_grad=False)
         songs.append((raw_tracks, original_song))
-    train_network(network, songs)
+    for epoch in range(100):
+        train_network(network, songs)

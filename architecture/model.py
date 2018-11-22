@@ -90,7 +90,7 @@ def forward_pass_all_channel_bilstms(raw_tracks, channels_bilstms):
     """
     all_channels_bidlstm_hidden = []
     for i in range(num_channels):
-        current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float).view(num_chunks, 1, -1)
+        current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float, requires_grad=False).view(num_chunks, 1, -1)
 
         lstm_out = channels_bilstms[i](current_single_channel_info)
         all_channels_bidlstm_hidden.append(lstm_out)

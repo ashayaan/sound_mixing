@@ -13,6 +13,8 @@ from model_params import chunk_size                         # lambda/T value in 
 from model_params import hidden_dim_unilstm                 # l value in our notes
 from model_params import mfcc_chunk_size
 from model_params import parameter_matrix_dim                           # r value in our notes
+
+
 def attention_across_track(H, h, B_1, b_t):
     '''The multiplication of the parameter matrices H and the
        hidden representation of the ith channel'''
@@ -55,15 +57,16 @@ def sample_dirchlet(beta_t1):
 
 
 def apply_scaling_factors(scaling_factor,raw_tracks,time_step):
-    raw_tracks[:,time_step, :] *= scaling_factor
-    mixed_raw_tracks = raw_tracks[:,time_step, :]
+    raw_tracks[:, time_step, :] *= scaling_factor
+    raw_tracks_at_t = raw_tracks[:, time_step, :]
+    mixed_raw_tracks = raw_tracks
+    return mixed_raw_tracks, raw_tracks_at_t
 
-    return mixed_raw_tracks, raw_tracks
 
-
-def get_mixed_mfcc_at_t(raw_tracks,time_step_value):
-    blended_track_at_t = torch.sum(raw_tracks[:,time_step_value,:],dim=0)
-    mfcc_features_blended_song = mfcc(blended_track_at_t)
+def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
+    blended_track_at_t = torch.sum(raw_tracks[:, time_step_value, :], dim=0)
+    # TODO : Check if below line could cause and problems
+    mfcc_features_blended_song = mfcc(blended_track_at_t.detach().numpy())
     mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song.reshape(mfcc_features_blended_song.shape[1])], dtype=torch.float)
 
     return mfcc_features_blended_song
