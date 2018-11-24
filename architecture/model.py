@@ -61,7 +61,7 @@ class RawTrackBiLSTM(nn.Module):
         :return:
         """
 
-        lstm_out, _ = self.lstm(current_channel_raw_track.view(num_chunks, 1, -1), self.hidden)
+        lstm_out, self.hidden = self.lstm(current_channel_raw_track.view(num_chunks, 1, -1), self.hidden)
         return lstm_out
 
 
@@ -92,6 +92,8 @@ def forward_pass_all_channel_bilstms(raw_tracks, channels_bilstms):
     for i in range(num_channels):
         current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float, requires_grad=False).view(num_chunks, 1, -1)
 
+        channels_bilstms[i].init_hidden()
+        channels_bilstms[i].hidden = (channels_bilstms[i].hidden[0].detach(), channels_bilstms[i].hidden[1].detach())
         lstm_out = channels_bilstms[i](current_single_channel_info)
         all_channels_bidlstm_hidden.append(lstm_out)
 

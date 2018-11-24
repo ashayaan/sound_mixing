@@ -1,9 +1,13 @@
+import re
 import torch
 import torch.nn as  nn
 import numpy as np
 
 from torch.distributions.dirichlet import Dirichlet
 from python_speech_features import mfcc
+from torch.autograd import Variable
+
+from graphviz import Digraph
 
 from model_params import hidden_dim_bidlstm                 # k value in our notes
 from model_params import num_channels                       # C value in our notes
@@ -31,7 +35,11 @@ def attention_across_track(H, h, B_1, b_t):
     '''Calculating the context vector for the attention 
        over the channels'''
 
+    print Y.shape
+    print Y.view(-1, num_chunks, 1, parameter_matrix_dim).shape
+    print X.shape
     Lambda = torch.matmul(Y.view(-1, num_chunks, 1, parameter_matrix_dim), X)
+    print Lambda
     soft_max = nn.Softmax(dim=1)
 
     alpha = soft_max(Lambda.view(num_channels, num_chunks, 1))
@@ -64,9 +72,10 @@ def apply_scaling_factors(scaling_factor,raw_tracks,time_step):
 
 
 def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
-    blended_track_at_t = torch.sum(raw_tracks[:, time_step_value, :], dim=0)
-    # TODO : Check if below line could cause and problems
-    mfcc_features_blended_song = mfcc(blended_track_at_t.detach().numpy())
+    with torch.no_grad():
+        blended_track_at_t = torch.sum(raw_tracks[:, time_step_value, :], dim=0)
+
+    mfcc_features_blended_song = mfcc(blended_track_at_t.numpy())
     mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song.reshape(mfcc_features_blended_song.shape[1])], dtype=torch.float)
 
     return mfcc_features_blended_song
@@ -74,10 +83,9 @@ def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
 
 def get_original_mfcc_at_t(original_track, time_step_value):
     mfcc_features_original_song = mfcc(original_track[time_step_value, :])
-    mfcc_features_original_song = torch.tensor([mfcc_features_original_song.reshape(mfcc_features_original_song.shape[1])], dtype=torch.float)
+    mfcc_features_original_song = torch.tensor([mfcc_features_original_song.reshape(mfcc_features_original_song.shape[1])], requires_grad=False, dtype=torch.float)
 
     return mfcc_features_original_song
-
 
 
 if __name__ == '__main__':
