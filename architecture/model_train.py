@@ -25,7 +25,8 @@ from model_params import hidden_dim_unilstm                             # l valu
 from model_params import mfcc_chunk_size
 from model_params import parameter_matrix_dim                           # r value in our notes
 from model_params import delta                                          # parameter for the loss function
-from copy import deepcopy
+from model_params import epoch
+
 torch.manual_seed(1)
 
 # if gpu is to be used
@@ -71,7 +72,8 @@ class PolicyNetwork(nn.Module):
         self.mfcc_unilstm_model = MFCCUniLSTM(self.mfcc_chunk_size, self.hidden_dim_unilstm)
 
         # initialize beta_t - dirichlet parameters at time t=0 for every input song
-        self.beta_t = None
+        self.beta_list = []
+        self.mixed_mfcc_till_t = []
 
         model_parameters = []
         for model in self.raw_track_channels_bilstms:
@@ -86,7 +88,7 @@ class PolicyNetwork(nn.Module):
                                                                   [self.parameter_matrix_for_each_channel_2])})
 
     def initialize_dirchlet_parameters(self):
-        self.beta_t = torch.rand(num_channels,)
+        self.beta_list.append(torch.rand(num_channels,))
 
     def forward(self, raw_tracks, original_mfcc_at_t, time_step_value):
         """
@@ -101,10 +103,8 @@ class PolicyNetwork(nn.Module):
         mixed_mfcc_at_t = get_mixed_mfcc_at_t(raw_tracks, time_step_value)
         blended_at_t = self.mfcc_unilstm_model(mixed_mfcc_at_t)
 
-        print self.beta_t
         h_alpha, alpha = attention_across_track(self.parameter_matrix_for_each_channel_1, all_channels_bidlstm_hidden, self.parameter_matrix_individual_tracks, blended_at_t)
         beta_t1 = attention_across_channels(self.parameter_matrix_across_channels, blended_at_t, self.parameter_matrix_for_each_channel_2, h_alpha)
-        print beta_t1
 
         scaling_factor_distibution = sample_dirchlet(beta_t1)
         if time_step_value + 1 != self.num_chunks:
@@ -112,11 +112,12 @@ class PolicyNetwork(nn.Module):
         else:
             mixed_raw_tracks = raw_tracks
 
-        loss = self.calculate_loss(original_mfcc_at_t, mixed_mfcc_at_t, self.beta_t, beta_t1)
+        beta_t = self.beta_list[-1]
+        loss = self.calculate_loss(original_mfcc_at_t, mixed_mfcc_at_t, beta_t, beta_t1)
 
         # setting beta_t1 of previous step (for next forward pass) as beta_t
-        self.beta_t = beta_t1.clone()
-        print self.beta_t
+        with torch.no_grad():
+            self.beta_list.append(beta_t1.clone())
 
         return mixed_raw_tracks, loss
 
@@ -125,7 +126,8 @@ class PolicyNetwork(nn.Module):
         difference_mfcc_features_norm = torch.matmul(difference_mfcc_features, difference_mfcc_features.view(mfcc_chunk_size, 1))
 
         kl_divergence_value = F.kl_div(beta_t, beta_t1)
-        return torch.exp(difference_mfcc_features_norm + delta*kl_divergence_value)
+        loss = torch.clamp(torch.exp(difference_mfcc_features_norm + delta*kl_divergence_value), max=1)
+        return loss
 
 
 def repackage_hidden(h):
@@ -136,7 +138,6 @@ def repackage_hidden(h):
 
 
 def process_one_song(network, raw_tracks, original_song):
-    time_step_value = 0
     total_loss = 0
     for time_step_value in tqdm(range(num_chunks)):
 
@@ -162,10 +163,10 @@ def process_one_song(network, raw_tracks, original_song):
 
         network.optimizer.zero_grad()
 
-        # https://discuss.pytorch.org/t/solved-training-a-simple-rnn/9055/8
         total_loss += loss.item()
-        # loss.backward(retain_graph=True)
-        loss.backward()
+
+        # https://discuss.pytorch.org/t/solved-training-a-simple-rnn/9055/8
+        loss.backward(retain_graph=True)
 
         network.optimizer.step()
 
@@ -196,7 +197,10 @@ if __name__ == "__main__":
         raw_tracks = torch.tensor(np.random.rand(num_channels, num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
         original_song = torch.tensor(np.random.rand(num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
         songs.append((raw_tracks, original_song))
-    for epoch in range(100):
+
+    for epoch in range(epoch):
         print('=======================================================================================================')
         print('EPOCH :{}'.format(epoch + 1))
+        print('=======================================================================================================')
+
         network, songs = train_network(network, songs)

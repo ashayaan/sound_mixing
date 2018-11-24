@@ -11,6 +11,8 @@ from model_params import chunk_size                         # lambda/T value in 
 from model_params import hidden_dim_unilstm                 # l value in our notes
 from model_params import mfcc_chunk_size
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 torch.manual_seed(1)
 
 
@@ -31,9 +33,9 @@ class MFCCUniLSTM(nn.Module):
                 torch.zeros(1, 1, self.hidden_dim))
 
     def forward(self, mixed_mfcc_at_t):
-        lstm_out, self.hidden = self.lstm(mixed_mfcc_at_t.view(1, 1, -1), self.hidden)
-        blended_till_t = lstm_out[-1]
-        return blended_till_t.view(-1, 1)
+        lstm_out, self.hidden = self.lstm(mixed_mfcc_at_t.view(len(mixed_mfcc_at_t), 1, -1), self.hidden)
+        blended_at_t = lstm_out[-1]
+        return blended_at_t.view(-1, 1)
 
 
 class RawTrackBiLSTM(nn.Module):

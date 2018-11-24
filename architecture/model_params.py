@@ -8,3 +8,4 @@ hidden_dim_unilstm = 5                                          # l value in our
 parameter_matrix_dim = 6                                        # r value in our notes
 
 delta = 0.01                                                    #parameter for the loss function
+epoch = 20

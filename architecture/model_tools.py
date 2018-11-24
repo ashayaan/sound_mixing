@@ -18,6 +18,9 @@ from model_params import hidden_dim_unilstm                 # l value in our not
 from model_params import mfcc_chunk_size
 from model_params import parameter_matrix_dim                           # r value in our notes
 
+# if gpu is to be used
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def attention_across_track(H, h, B_1, b_t):
     '''The multiplication of the parameter matrices H and the
@@ -26,23 +29,16 @@ def attention_across_track(H, h, B_1, b_t):
     X = torch.matmul(H.view(num_channels, -1, parameter_matrix_dim, hidden_dim_bidlstm),
                         h.view(num_channels, num_chunks, hidden_dim_bidlstm,1) )
 
-    ''' The multiplication of the Parameter matrices B and the
-        the mixing vector that is outputted form the uni-RNN'''
-
+    # The multiplication of the Parameter matrices B and the mixing vector that is outputted form the uni-RNN
     Y = torch.matmul(B_1, b_t)
     Y = Y.repeat(num_chunks, 1).view(num_chunks, 1, parameter_matrix_dim)
 
-    '''Calculating the context vector for the attention 
-       over the channels'''
-
-    print Y.shape
-    print Y.view(-1, num_chunks, 1, parameter_matrix_dim).shape
-    print X.shape
+    # Calculate attention weights
     Lambda = torch.matmul(Y.view(-1, num_chunks, 1, parameter_matrix_dim), X)
-    print Lambda
     soft_max = nn.Softmax(dim=1)
-
     alpha = soft_max(Lambda.view(num_channels, num_chunks, 1))
+
+    # Calculating the context vector for the attention over the channels
     h_alpha = h*alpha.view(num_channels, num_chunks, 1, 1).repeat(1, 1, 1, hidden_dim_bidlstm)
     h_alpha_context_vec = torch.sum(h_alpha, dim=1)
     return h_alpha_context_vec, alpha
@@ -51,6 +47,7 @@ def attention_across_track(H, h, B_1, b_t):
 def attention_across_channels(B_2, b_t, F, h_alpha):
     X = torch.matmul(F, h_alpha.reshape(num_channels, hidden_dim_bidlstm, 1))
     Y = torch.matmul(B_2, b_t)
+
     Lambda = torch.matmul(Y.view(-1, 1, parameter_matrix_dim), X).view(num_channels)
     soft_max = nn.Softmax(dim=0)
     beta_t1 = soft_max(Lambda)
@@ -82,8 +79,9 @@ def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
 
 
 def get_original_mfcc_at_t(original_track, time_step_value):
-    mfcc_features_original_song = mfcc(original_track[time_step_value, :])
-    mfcc_features_original_song = torch.tensor([mfcc_features_original_song.reshape(mfcc_features_original_song.shape[1])], requires_grad=False, dtype=torch.float)
+    with torch.no_grad():
+        mfcc_features_original_song = mfcc(original_track[time_step_value, :])
+        mfcc_features_original_song = torch.tensor([mfcc_features_original_song.reshape(mfcc_features_original_song.shape[1])], requires_grad=False, dtype=torch.float)
 
     return mfcc_features_original_song
 
