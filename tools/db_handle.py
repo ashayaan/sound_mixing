@@ -38,7 +38,7 @@ def get_chunked_songs(source):
 		mixed_song_data = audio_preprocessing.get_audio_data(mixed_song)
 		for i in range(FILE_LENGTH_FOR_TESTING/CHUNK_SIZE):
 			mixed_song_data_chunked.append(mixed_song_data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
-		yield (torch.tensor(np.array(raw_song_chunked_data),dtype = torch.float),torch.tensor(np.array([mixed_song_data_chunked]),dtype = torch.float))
+		yield (torch.tensor(np.array(raw_song_chunked_data), dtype=torch.float, requires_grad=False),torch.tensor(np.array([mixed_song_data_chunked]), dtype=torch.float, requires_grad=False))
 
 
 if __name__ == '__main__':
