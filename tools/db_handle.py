@@ -3,7 +3,9 @@ import os
 import gc
 import torch
 import numpy as np
-CHUNK_SIZE = 100
+import argparse
+
+CHUNK_SIZE = 500
 # 30 sec eqvivalent  
 FILE_LENGTH_FOR_TESTING = 1320000
 NUMBER_OF_RAW_TRACKS = 72
@@ -24,17 +26,24 @@ def get_chunks(source):
 				mixed_song = "./"+root+"/"+filter(lambda x:x[-4:]==".mp3",filenames)[0]
 			if sorted(filter(lambda x:x[-4:]==".wav",filenames)):
 				audio_files = sorted(filter(lambda x:x[-4:]==".wav",filenames))
-		chunked_data = []
+		raw_song_chunked_data = []
 		for audio_file in audio_files:
-			song_data = []
+			raw_song_data = []
 			audio_data = audio_preprocessing.get_audio_data("./"+root+"/"+audio_file)
 			for i in range(FILE_LENGTH_FOR_TESTING/CHUNK_SIZE):
-				song_data.append(audio_data[100*i:100*(i+1)])
-			chunked_data.append(song_data)
-		yield (torch.tensor(np.array(chunked_data),dtype = torch.float32),torch.tensor(np.array(audio_preprocessing.get_audio_data(mixed_song)[100*i:100*(i+1)]),dtype = torch.float32))
+				raw_song_data.append(audio_data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
+			raw_song_chunked_data.append(raw_song_data)
+		mixed_song_data_chunked = []
+		mixed_song_data = audio_preprocessing.get_audio_data(mixed_song)
+		for i in range(FILE_LENGTH_FOR_TESTING/CHUNK_SIZE):
+			mixed_song_data_chunked.append(mixed_song_data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
+		yield (torch.tensor(np.array(raw_song_chunked_data),dtype = torch.float),torch.tensor(np.array([mixed_song_data_chunked]),dtype = torch.float))
 
 if __name__ == '__main__':
 	gc.collect()
-	x = get_chunks("./")
-	print x.next()
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--datapath", type=str,default = "./",help="path to the dataset")
+	args = parser.parse_args()
+	x = get_chunks(args.datapath)
+	# print x.next()
 
