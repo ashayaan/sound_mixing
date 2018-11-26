@@ -73,7 +73,7 @@ def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
         blended_track_at_t = torch.sum(raw_tracks[:, time_step_value, :], dim=0)
 
     mfcc_features_blended_song = mfcc(blended_track_at_t.numpy())
-    mfcc_features_original_song = np.sum(mfcc_features_blended_song, axis=0)
+    mfcc_features_blended_song = np.sum(mfcc_features_blended_song, axis=0)
     mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song], dtype=torch.float)
 
     return mfcc_features_blended_song
