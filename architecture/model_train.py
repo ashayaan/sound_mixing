@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 
 import itertools
+import argparse
 
 from model import (MFCCUniLSTM, RawTrackBiLSTM, instantiate_all_channels_bilstms, forward_pass_all_channel_bilstms)
 from model_tools import (attention_across_track, attention_across_channels,
@@ -26,6 +27,8 @@ from model_params import mfcc_chunk_size
 from model_params import parameter_matrix_dim                           # r value in our notes
 from model_params import delta                                          # parameter for the loss function
 from model_params import epoch
+
+from tools.db_handle import get_chunked_songs
 
 torch.manual_seed(1)
 
@@ -175,9 +178,9 @@ def process_one_song(network, raw_tracks, original_song):
     return network, raw_tracks, original_song
 
 
-def train_network(network, songs):
+def train_network(network, path_to_songs):
     song_counter = 1
-    for (raw_tracks, original_song) in songs:
+    for (raw_tracks, original_song) in get_chunked_songs(path_to_songs):
         network.initialize_dirchlet_parameters()
 
         print("SONG NUMBER: {}".format(str(song_counter)))
@@ -185,22 +188,27 @@ def train_network(network, songs):
         song_counter += 1
         print('-------------------------------------------------------------------------------------------------------')
 
-    return network, songs
+    return network
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--datapath", type=str, default="./", help="path to the dataset")
+    args = parser.parse_args()
+
     network = PolicyNetwork(num_channels, num_chunks, chunk_size, hidden_dim_bidlstm, mfcc_chunk_size, hidden_dim_unilstm, parameter_matrix_dim)
     songs = []
 
-    print('LOADING DATASET')
-    for i in tqdm(range(10)):
-        raw_tracks = torch.tensor(np.random.rand(num_channels, num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
-        original_song = torch.tensor(np.random.rand(num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
-        songs.append((raw_tracks, original_song))
+    # DUMMY DATA
+    # print('LOADING DATASET')
+    # for i in tqdm(range(10)):
+    #     raw_tracks = torch.tensor(np.random.rand(num_channels, num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
+    #     original_song = torch.tensor(np.random.rand(num_chunks, chunk_size), dtype=torch.float, requires_grad=False)
+    #     songs.append((raw_tracks, original_song))
 
     for epoch in range(epoch):
         print('=======================================================================================================')
         print('EPOCH :{}'.format(epoch + 1))
         print('=======================================================================================================')
 
-        network, songs = train_network(network, songs)
+        network = train_network(network, path_to_songs=args.datapath)

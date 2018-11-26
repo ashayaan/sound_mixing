@@ -11,7 +11,7 @@ FILE_LENGTH_FOR_TESTING = 1320000
 NUMBER_OF_RAW_TRACKS = 72
 
 
-def get_chunks(source):
+def get_chunked_songs(source):
 	'''
 	:params data set path
 	:returns a tuple or two tensors for each song
@@ -21,6 +21,7 @@ def get_chunks(source):
 		song_folders = sorted(dirnames)
 		break;
 	for song_folder in song_folders:
+		print song_folder
 		for root, dirnames, filenames in os.walk(song_folder):
 			if filter(lambda x:x[-4:]==".mp3",filenames):
 				mixed_song = "./"+root+"/"+filter(lambda x:x[-4:]==".mp3",filenames)[0]
@@ -39,11 +40,10 @@ def get_chunks(source):
 			mixed_song_data_chunked.append(mixed_song_data[CHUNK_SIZE*i:CHUNK_SIZE*(i+1)])
 		yield (torch.tensor(np.array(raw_song_chunked_data),dtype = torch.float),torch.tensor(np.array([mixed_song_data_chunked]),dtype = torch.float))
 
+
 if __name__ == '__main__':
 	gc.collect()
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--datapath", type=str,default = "./",help="path to the dataset")
+	parser.add_argument("--datapath", type=str, default="./", help="path to the dataset")
 	args = parser.parse_args()
-	x = get_chunks(args.datapath)
-	# print x.next()
-
+	x = get_chunked_songs(args.datapath)
