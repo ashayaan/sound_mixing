@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 # from torch.distributions.kl import kl_divergence
-import torch.nn.functional as F
 import numpy as np
 
 import itertools
@@ -208,7 +207,7 @@ if __name__ == "__main__":
 
     for epoch in range(epoch):
         print('=======================================================================================================')
-        print('EPOCH :{}'.format(epoch + 1))
+        print('EPOCH : {}'.format(epoch + 1))
         print('=======================================================================================================')
 
         network = train_network(network, path_to_songs=args.datapath)

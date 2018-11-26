@@ -1,6 +1,6 @@
 import re
 import torch
-import torch.nn as  nn
+import torch.nn as nn
 import numpy as np
 
 from torch.distributions.dirichlet import Dirichlet
@@ -27,7 +27,7 @@ def attention_across_track(H, h, B_1, b_t):
        hidden representation of the ith channel'''
 
     X = torch.matmul(H.view(num_channels, -1, parameter_matrix_dim, hidden_dim_bidlstm),
-                        h.view(num_channels, num_chunks, hidden_dim_bidlstm,1) )
+                     h.view(num_channels, num_chunks, hidden_dim_bidlstm,1))
 
     # The multiplication of the Parameter matrices B and the mixing vector that is outputted form the uni-RNN
     Y = torch.matmul(B_1, b_t)
@@ -73,15 +73,17 @@ def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
         blended_track_at_t = torch.sum(raw_tracks[:, time_step_value, :], dim=0)
 
     mfcc_features_blended_song = mfcc(blended_track_at_t.numpy())
-    mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song.reshape(mfcc_features_blended_song.shape[1])], dtype=torch.float)
+    mfcc_features_original_song = np.sum(mfcc_features_blended_song, axis=0)
+    mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song], dtype=torch.float)
 
     return mfcc_features_blended_song
 
 
 def get_original_mfcc_at_t(original_track, time_step_value):
     with torch.no_grad():
-        mfcc_features_original_song = mfcc(original_track[time_step_value, :])
-        mfcc_features_original_song = torch.tensor([mfcc_features_original_song.reshape(mfcc_features_original_song.shape[1])], requires_grad=False, dtype=torch.float)
+        mfcc_features_original_song = mfcc(original_track[time_step_value])
+        mfcc_features_original_song = np.sum(mfcc_features_original_song, axis=0)
+        mfcc_features_original_song = torch.tensor([mfcc_features_original_song], requires_grad=False, dtype=torch.float)
 
     return mfcc_features_original_song
 
