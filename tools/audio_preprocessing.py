@@ -16,7 +16,7 @@ def get_audio_data(audio_file_path):
     """
     audio_data = None
     try:
-        audio_data, sample_rate = librosa.load(audio_file_path, sr=config.SAMPLE_RATE)
+        audio_data, sample_rate = librosa.load(audio_file_path, duration = 60,sr=config.SAMPLE_RATE)
     except Exception:
         import traceback
         error = traceback.format_exc()
@@ -43,8 +43,18 @@ def create_empty_track(output_file_path):
     """
     audio_data = np.zeros([config.MAX_LENGTH, ])
     librosa.output.write_wav(output_file_path, audio_data, config.SAMPLE_RATE)
+    change_length_audio_file(output_file_path)
     return audio_data
 
+def change_length_audio_file(audio_file_path):
+    """
+    :param audio_file_path:
+    :return audio_duration:
+    """
+    audio_data = get_audio_data(audio_file_path)
+    audio_data = pad_audio_data(audio_data)
+    librosa.output.write_wav(audio_file_path, audio_data, config.SAMPLE_RATE)
+    return audio_data
 
 def get_audio_duration(audio_file_path):
     """
@@ -57,7 +67,6 @@ def get_audio_duration(audio_file_path):
 
 
 if __name__ == "__main__":
-    audio_file_path = "../dataset_raw/song_1/1111_Remix.mp3"
+    audio_file_path = "dataset/sample_audio_files/sample_wav_file.wav"
     audio_data = get_audio_data(audio_file_path)
-    print audio_data, audio_data.shape
     pad_audio_data(audio_data)
