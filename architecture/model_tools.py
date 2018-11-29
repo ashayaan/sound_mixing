@@ -58,7 +58,7 @@ def sample_dirchlet(beta_t1):
     dirichlet_distribution = Dirichlet(beta_t1)
     sample = dirichlet_distribution.rsample(sample_shape=(chunk_size, ))
     sample = sample.view(num_channels, chunk_size)
-    return torch.tensor(sample, dtype=torch.float)
+    return torch.tensor(sample, dtype=torch.float).to(device)
 
 
 def apply_scaling_factors(scaling_factor,raw_tracks,time_step):
@@ -74,7 +74,7 @@ def get_mixed_mfcc_at_t(raw_tracks, time_step_value):
 
     mfcc_features_blended_song = mfcc(blended_track_at_t.numpy())
     mfcc_features_blended_song = np.sum(mfcc_features_blended_song, axis=0)
-    mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song], dtype=torch.float)
+    mfcc_features_blended_song = torch.tensor([mfcc_features_blended_song], dtype=torch.float).to(device)
 
     return mfcc_features_blended_song
 
@@ -83,7 +83,7 @@ def get_original_mfcc_at_t(original_track, time_step_value):
     with torch.no_grad():
         mfcc_features_original_song = mfcc(original_track[time_step_value])
         mfcc_features_original_song = np.sum(mfcc_features_original_song, axis=0)
-        mfcc_features_original_song = torch.tensor([mfcc_features_original_song], requires_grad=False, dtype=torch.float)
+        mfcc_features_original_song = torch.tensor([mfcc_features_original_song], requires_grad=False, dtype=torch.float).to(device)
 
     return mfcc_features_original_song
 

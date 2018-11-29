@@ -31,7 +31,7 @@ from tools.db_handle import get_chunked_songs
 
 torch.manual_seed(1)
 
-# if gpu is to be used
+# Checking if the GPU is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -59,15 +59,15 @@ class PolicyNetwork(nn.Module):
 
         # attention matrices across tracks
         # B1                        shape: (r x l)
-        self.parameter_matrix_individual_tracks = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True))
+        self.parameter_matrix_individual_tracks = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True)).to(device)
         # H_1 ... H_c               shape: (C x r x k)
-        self.parameter_matrix_for_each_channel_1 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True))
+        self.parameter_matrix_for_each_channel_1 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True)).to(device)
 
         # attention matrices acriss channels
         # B2                        shape: (r x l)
-        self.parameter_matrix_across_channels = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True))
+        self.parameter_matrix_across_channels = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True)).to(device)
         # F_1 ... F_c               shape: (C x r x k)
-        self.parameter_matrix_for_each_channel_2 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True))
+        self.parameter_matrix_for_each_channel_2 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True)).to(device)
 
         # the models
         self.raw_track_channels_bilstms = instantiate_all_channels_bilstms(self.chunk_size, self.hidden_dim_bidlstm, self.num_channels)

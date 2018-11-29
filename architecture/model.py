@@ -25,12 +25,12 @@ class MFCCUniLSTM(nn.Module):
         super(MFCCUniLSTM, self).__init__()
 
         self.hidden_dim = hidden_dim_unilstm
-        self.lstm = nn.LSTM(mfcc_chunk_size, hidden_dim_unilstm)
+        self.lstm = nn.LSTM(mfcc_chunk_size, hidden_dim_unilstm).to(device)
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
-        return (torch.zeros(1, 1, self.hidden_dim),
-                torch.zeros(1, 1, self.hidden_dim))
+        return (torch.zeros(1, 1, self.hidden_dim).to(device),
+                torch.zeros(1, 1, self.hidden_dim).to(device))
 
     def forward(self, mixed_mfcc_at_t):
         lstm_out, self.hidden = self.lstm(mixed_mfcc_at_t.view(len(mixed_mfcc_at_t), 1, -1), self.hidden)
@@ -49,13 +49,13 @@ class RawTrackBiLSTM(nn.Module):
 
         self.hidden_dim = hidden_dim
 
-        self.lstm = nn.LSTM(chunk_size, hidden_dim // 2, num_layers=1, bidirectional=True)
+        self.lstm = nn.LSTM(chunk_size, hidden_dim // 2, num_layers=1, bidirectional=True).to(device)
         self.hidden = self.init_hidden()
 
     def init_hidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(2, 1, self.hidden_dim // 2),
-                torch.zeros(2, 1, self.hidden_dim // 2))
+        return (torch.zeros(2, 1, self.hidden_dim // 2).to(device),
+                torch.zeros(2, 1, self.hidden_dim // 2).to(device))
 
     def forward(self, current_channel_raw_track):
         """
@@ -92,14 +92,14 @@ def forward_pass_all_channel_bilstms(raw_tracks, channels_bilstms):
     """
     all_channels_bidlstm_hidden = []
     for i in range(num_channels):
-        current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float, requires_grad=False).view(num_chunks, 1, -1)
+        current_single_channel_info = torch.tensor(raw_tracks[i], dtype=torch.float, requires_grad=False).view(num_chunks, 1, -1).to(device)
 
         channels_bilstms[i].init_hidden()
         channels_bilstms[i].hidden = (channels_bilstms[i].hidden[0].detach(), channels_bilstms[i].hidden[1].detach())
         lstm_out = channels_bilstms[i](current_single_channel_info)
         all_channels_bidlstm_hidden.append(lstm_out)
 
-    all_channels_bidlstm_hidden = torch.stack(all_channels_bidlstm_hidden)
+    all_channels_bidlstm_hidden = torch.stack(all_channels_bidlstm_hidden).to(device)
     return all_channels_bidlstm_hidden
 
 
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     import numpy as np
     from model_tools import get_mixed_mfcc_at_t
 
-    raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size))
+    raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size)).to(device)
     channels_bilstms = instantiate_all_channels_bilstms()
     all_channels_bidlstm_hidden = forward_pass_all_channel_bilstms(raw_tracks, channels_bilstms)
 
