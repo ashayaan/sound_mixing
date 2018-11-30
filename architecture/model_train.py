@@ -27,7 +27,10 @@ from model_params import parameter_matrix_dim                           # r valu
 from model_params import delta                                          # parameter for the loss function
 from model_params import epoch
 
-from tools.db_handle import get_chunked_songs
+
+import sys
+sys.path.insert(0,'../tools/')
+from db_handle import get_chunked_songs
 
 torch.manual_seed(1)
 
@@ -59,15 +62,15 @@ class PolicyNetwork(nn.Module):
 
         # attention matrices across tracks
         # B1                        shape: (r x l)
-        self.parameter_matrix_individual_tracks = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True)).to(device)
+        self.parameter_matrix_individual_tracks = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True,device=device))
         # H_1 ... H_c               shape: (C x r x k)
-        self.parameter_matrix_for_each_channel_1 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True)).to(device)
+        self.parameter_matrix_for_each_channel_1 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True,device=device))
 
         # attention matrices acriss channels
         # B2                        shape: (r x l)
-        self.parameter_matrix_across_channels = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True)).to(device)
+        self.parameter_matrix_across_channels = nn.Parameter(torch.randn(parameter_matrix_dim, hidden_dim_unilstm, dtype=torch.float, requires_grad=True,device=device))
         # F_1 ... F_c               shape: (C x r x k)
-        self.parameter_matrix_for_each_channel_2 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True)).to(device)
+        self.parameter_matrix_for_each_channel_2 = nn.Parameter(torch.randn(num_channels, parameter_matrix_dim, hidden_dim_bidlstm, dtype=torch.float, requires_grad=True,device=device))
 
         # the models
         self.raw_track_channels_bilstms = instantiate_all_channels_bilstms(self.chunk_size, self.hidden_dim_bidlstm, self.num_channels)
@@ -83,11 +86,14 @@ class PolicyNetwork(nn.Module):
 
         model_parameters.extend(list(self.mfcc_unilstm_model.parameters()))
 
+        parameter_matrices = [self.parameter_matrix_individual_tracks,self.parameter_matrix_for_each_channel_1,self.parameter_matrix_across_channels,self.parameter_matrix_for_each_channel_2]
+        model_parameters.extend(parameter_matrices)
+
         self.optimizer = optim.Adam(model_parameters)
-        self.optimizer.add_param_group({"params": itertools.chain([self.parameter_matrix_individual_tracks],
-                                                                  [self.parameter_matrix_for_each_channel_1],
-                                                                  [self.parameter_matrix_across_channels],
-                                                                  [self.parameter_matrix_for_each_channel_2])})
+        # self.optimizer.add_param_group({"params": [self.parameter_matrix_individual_tracks,
+        #                                                           self.parameter_matrix_for_each_channel_1,
+        #                                                           self.parameter_matrix_across_channels,
+        #                                                           self.parameter_matrix_for_each_channel_2]})
 
     def initialize_dirchlet_parameters(self):
         self.beta_list.append(torch.rand(num_channels,))
