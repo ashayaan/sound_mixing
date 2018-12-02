@@ -197,6 +197,8 @@ def train_network(network, path_to_songs):
 
 
 if __name__ == "__main__":
+    print  "Device in use: " + str(device)
+    print  "\n"
     parser = argparse.ArgumentParser()
     parser.add_argument("--datapath", type=str, default="./", help="path to the dataset")
     args = parser.parse_args()
