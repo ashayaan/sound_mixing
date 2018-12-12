@@ -106,7 +106,7 @@ if __name__ == '__main__':
     # beta = attention_across_channels(B_2, b_t,F,alpha)
     # print (beta)
 
-    raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size))
+    raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size)).to(device)
     original_track = torch.rand(num_chunks, chunk_size)
     print(get_mixed_mfcc_at_t(raw_tracks, time_step_value=1).shape)
     print(get_mixed_mfcc_at_t(raw_tracks, time_step_value=1).view(1, 1, -1).shape)
