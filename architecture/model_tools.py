@@ -60,7 +60,6 @@ def sample_dirchlet(beta_t1):
     sample = sample.view(num_channels, chunk_size)
     return torch.tensor(sample, dtype=torch.float).to(device)
 
-
 def apply_scaling_factors(scaling_factor,raw_tracks,time_step):
     raw_tracks[:, time_step, :] *= scaling_factor
     raw_tracks_at_t = raw_tracks[:, time_step, :]
