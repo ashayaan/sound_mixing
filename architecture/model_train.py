@@ -96,7 +96,7 @@ class PolicyNetwork(nn.Module):
         #                                                           self.parameter_matrix_for_each_channel_2]})
 
     def initialize_dirchlet_parameters(self):
-        self.beta_list.append(torch.rand(num_channels,))
+        self.beta_list.append(torch.rand(num_channels,).to(device))
 
     def forward(self, raw_tracks, original_mfcc_at_t, time_step_value):
         """
