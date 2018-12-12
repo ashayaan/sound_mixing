@@ -51,7 +51,7 @@ def attention_across_channels(B_2, b_t, F, h_alpha):
     Lambda = torch.matmul(Y.view(-1, 1, parameter_matrix_dim), X).view(num_channels)
     soft_max = nn.Softmax(dim=0)
     beta_t1 = soft_max(Lambda)
-    return beta_t1
+    return beta_t1.to(device)
 
 
 def sample_dirchlet(beta_t1):
