@@ -107,7 +107,7 @@ if __name__ == '__main__':
     # print (beta)
 
     raw_tracks = torch.tensor(np.random.randn(num_channels, num_chunks, chunk_size)).to(device)
-    original_track = torch.rand(num_chunks, chunk_size)
+    original_track = torch.rand(num_chunks, chunk_size).to(device)
     print(get_mixed_mfcc_at_t(raw_tracks, time_step_value=1).shape)
     print(get_mixed_mfcc_at_t(raw_tracks, time_step_value=1).view(1, 1, -1).shape)
     print(get_original_mfcc_at_t(original_track, time_step_value=1).shape)
