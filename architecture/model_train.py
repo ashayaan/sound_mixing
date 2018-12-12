@@ -187,7 +187,7 @@ def train_network(network, path_to_songs):
     song_counter = 1
     for (raw_tracks, original_song) in get_chunked_songs(path_to_songs):
         network.initialize_dirchlet_parameters()
-
+        raw_tracks = raw_tracks.to(device)
         print("SONG NUMBER: {}".format(str(song_counter)))
         network, raw_tracks_processed, original_song_processed = process_one_song(network, raw_tracks, original_song)
         song_counter += 1
