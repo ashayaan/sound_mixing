@@ -134,7 +134,10 @@ class PolicyNetwork(nn.Module):
         difference_mfcc_features_norm = torch.matmul(difference_mfcc_features, difference_mfcc_features.view(mfcc_chunk_size, 1))
 
         kl_divergence_value = F.kl_div(beta_t, beta_t1)
-        loss = torch.clamp(torch.exp(difference_mfcc_features_norm + delta*kl_divergence_value), max=1)
+        print('mfcc_norm', difference_mfcc_features_norm)
+        print('kl_diverg', kl_divergence_value)
+        loss = difference_mfcc_features_norm + delta*kl_divergence_value
+        print('loss', loss)
         return loss
 
 
@@ -192,7 +195,7 @@ def train_network(network, path_to_songs):
         network, raw_tracks_processed, original_song_processed = process_one_song(network, raw_tracks, original_song)
         song_counter += 1
         print('-------------------------------------------------------------------------------------------------------')
-
+        break
     return network
 
 
